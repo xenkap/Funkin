@@ -13,6 +13,7 @@ import openfl.events.Event;
 import openfl.Lib;
 import openfl.media.Video;
 import openfl.net.NetStream;
+import funkin.audio.AudioSwitchFix;
 
 /**
  * The main class which initializes HaxeFlixel and starts the game in its initial state.
@@ -25,6 +26,9 @@ class Main extends Sprite
   var zoom:Float = -1; // If -1, zoom is automatically calculated to fit the window dimensions.
   var skipSplash:Bool = true; // Whether to skip the flixel splash screen that appears in release mode.
   var startFullscreen:Bool = false; // Whether to start the game in fullscreen on desktop targets
+
+  @:dox(hide)
+  public static var audioDisconnected:Bool = false; // Variable used in checking for audio device errors. Don't touch
 
   // You can pretty much ignore everything from here on - your code should go in your states.
 
@@ -48,6 +52,8 @@ class Main extends Sprite
     // Load mods to override assets.
     // TODO: Replace with loadEnabledMods() once the user can configure the mod list.
     funkin.modding.PolymodHandler.loadAllMods();
+
+    AudioSwitchFix.init();
 
     if (stage != null)
     {
@@ -139,4 +145,11 @@ class Main extends Sprite
     funkin.input.Cursor.registerHaxeUICursors();
     haxe.ui.tooltips.ToolTipManager.defaultDelay = 200;
   }
+
+  #if windows
+  private override function __update(transformOnly:Bool, updateChildren:Bool):Void {
+    super.__update(transformOnly, updateChildren);
+    if (Main.audioDisconnected) AudioSwitchFix.reloadAudioDevice();
+  }
+  #end
 }
