@@ -653,12 +653,7 @@ class Strumline extends FlxSpriteGroup
       note.holdNoteSprite.hitNote = true;
       note.holdNoteSprite.missedNote = false;
 
-      var lastLength = note.holdNoteSprite.sustainLength;
-      note.holdNoteSprite.sustainLength = (note.holdNoteSprite.strumTime + note.holdNoteSprite.fullSustainLength)
-        - (conductorInUse.songPosition - conductorInUse.inputOffset);
-
-      // Reward hold note bonus-- not penalizing hitting late
-      PlayState?.instance.sustainHit(note.holdNoteSprite, lastLength);
+      note.holdNoteSprite.sustainLength = (note.holdNoteSprite.strumTime + note.holdNoteSprite.fullSustainLength) - conductorInUse.songPosition;
     }
 
     #if FEATURE_GHOST_TAPPING
