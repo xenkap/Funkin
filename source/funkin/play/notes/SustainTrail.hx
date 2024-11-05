@@ -29,8 +29,11 @@ class SustainTrail extends FlxSprite
 
   public var strumTime:Float = 0; // millis
   public var noteDirection:NoteDirection = 0;
+
   public var sustainLength(default, set):Float = 0; // millis
+  public var lastSustainLength:Float = 0; // used by PlayState to handle scoring
   public var fullSustainLength:Float = 0;
+
   public var noteData:Null<SongNoteData>;
   public var parentStrumline:Strumline;
 
@@ -105,6 +108,7 @@ class SustainTrail extends FlxSprite
     // BASIC SETUP
     this.sustainLength = sustainLength;
     this.fullSustainLength = sustainLength;
+    this.lastSustainLength = sustainLength;
     this.noteDirection = noteDirection;
 
     setupHoldNoteGraphic(noteStyle);
@@ -349,6 +353,7 @@ class SustainTrail extends FlxSprite
     noteDirection = 0;
     sustainLength = 0;
     fullSustainLength = 0;
+    lastSustainLength = 0;
     noteData = null;
 
     hitNote = false;
@@ -363,6 +368,7 @@ class SustainTrail extends FlxSprite
     noteDirection = 0;
     sustainLength = 0;
     fullSustainLength = 0;
+    lastSustainLength = 0;
     noteData = null;
 
     hitNote = false;
