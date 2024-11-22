@@ -2078,7 +2078,7 @@ class PlayState extends MusicBeatSubState
     // A negative instrumental offset means the song skips the first few milliseconds of the track.
     // This just gets added into the startTimestamp behavior so we don't need to do anything extra.
     FlxG.sound.music.pause();
-    FlxG.sound.music.time = Math.max(0, startTimestamp - Conductor.instance.instrumentalOffset, minSongLength);
+    FlxG.sound.music.time = Math.max(0, startTimestamp - Conductor.instance.instrumentalOffset);
     FlxG.sound.music.pitch = playbackRate;
 
     // Prevent the volume from being wrong.
@@ -2087,15 +2087,14 @@ class PlayState extends MusicBeatSubState
 
     trace('Playing vocals...');
     add(vocals);
-    vocals.play(false, FlxG.sound.music.time, minSongLength);
     vocals.volume = 1.0;
     vocals.pitch = playbackRate;
     vocals.time = FlxG.sound.music.time;
     // trace('${FlxG.sound.music.time}');
     // trace('${vocals.time}');
 
-    FlxG.sound.music.play();
-    vocals.play();
+    FlxG.sound.music.play(false, FlxG.sound.music.time, minSongLength);
+    vocals.play(false, FlxG.sound.music.time, minSongLength);
 
     #if FEATURE_DISCORD_RPC
     // Updating Discord Rich Presence (with Time Left)
@@ -2129,7 +2128,8 @@ class PlayState extends MusicBeatSubState
     // Skip this if the music is paused (GameOver, Pause menu, start-of-song offset, etc.)
     if (!(FlxG.sound.music?.playing ?? false)) return;
 
-    var timeToPlayAt:Float = Math.min(FlxG.sound.music.length, Math.max(Math.min(Conductor.instance.combinedOffset, 0), Conductor.instance.songPosition) - Conductor.instance.combinedOffset);
+    var timeToPlayAt:Float = Math.min(FlxG.sound.music.length, Math.max(Math.min(Conductor.instance.combinedOffset, 0),
+                                      Conductor.instance.frameSongPosition) - Conductor.instance.combinedOffset);
     trace('Resyncing vocals to ${timeToPlayAt}');
 
     FlxG.sound.music.pause();
