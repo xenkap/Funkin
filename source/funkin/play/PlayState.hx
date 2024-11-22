@@ -805,6 +805,8 @@ class PlayState extends MusicBeatSubState
     return true;
   }
 
+  public var minSongLength:Float = 0;
+
   public override function update(elapsed:Float):Void
   {
     // TOTAL: 9.42% CPU Time when profiled in VS 2019.
@@ -1435,7 +1437,7 @@ class PlayState extends MusicBeatSubState
       // activeNotes.sort(SortUtil.byStrumtime, FlxSort.DESCENDING);
     }
 
-    if (FlxG.sound.music != null)
+    if (FlxG.sound.music != null && FlxG.sound.music.playing && vocals != null && vocals.playing)
     {
       var correctSync:Float = Math.min(FlxG.sound.music.length, Math.max(0, Conductor.instance.songPosition - Conductor.instance.combinedOffset));
       var playerVoicesError:Float = 0;
@@ -2064,10 +2066,19 @@ class PlayState extends MusicBeatSubState
     FlxG.sound.music.onComplete = function() {
       endSong(skipEndingTransition);
     };
+
+    // Check for the lowest song length, then set all the endTimes to it.
+    var allSoundLengths:Array<Float> = [FlxG.sound.music.length];
+    if (vocals.getPlayerVoiceLength() > 0) allSoundLengths.push(vocals.getPlayerVoiceLength());
+    if (vocals.getOpponentVoiceLength() > 0) allSoundLengths.push(vocals.getOpponentVoiceLength());
+
+    allSoundLengths.sort(flixel.util.FlxSort.byValues.bind(flixel.util.FlxSort.ASCENDING));
+    minSongLength = allSoundLengths[0];
+
     // A negative instrumental offset means the song skips the first few milliseconds of the track.
     // This just gets added into the startTimestamp behavior so we don't need to do anything extra.
     FlxG.sound.music.pause();
-    FlxG.sound.music.time = Math.max(0, startTimestamp - Conductor.instance.instrumentalOffset);
+    FlxG.sound.music.time = Math.max(0, startTimestamp - Conductor.instance.instrumentalOffset, minSongLength);
     FlxG.sound.music.pitch = playbackRate;
 
     // Prevent the volume from being wrong.
@@ -2076,7 +2087,7 @@ class PlayState extends MusicBeatSubState
 
     trace('Playing vocals...');
     add(vocals);
-
+    vocals.play(false, FlxG.sound.music.time, minSongLength);
     vocals.volume = 1.0;
     vocals.pitch = playbackRate;
     vocals.time = FlxG.sound.music.time;
@@ -2125,10 +2136,10 @@ class PlayState extends MusicBeatSubState
     vocals.pause();
 
     FlxG.sound.music.time = timeToPlayAt;
-    FlxG.sound.music.play(false, timeToPlayAt);
+    FlxG.sound.music.play(false, timeToPlayAt, minSongLength);
 
     vocals.time = timeToPlayAt;
-    vocals.play(false, timeToPlayAt);
+    vocals.play(false, timeToPlayAt, minSongLength);
   }
 
   /**
