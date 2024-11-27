@@ -297,7 +297,7 @@ class Conductor
 
   function set_waitingFramePosition(value:Int)
   {
-    if (value > 0) this.frameSongPosition = this.songPosition;
+    // if (value > 0) this.frameSongPosition = this.songPosition;
     return waitingFramePosition = value;
   }
 
