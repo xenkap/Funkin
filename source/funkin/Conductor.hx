@@ -503,8 +503,6 @@ class Conductor
       this.onMeasureHit.dispatch();
     }
 
-    this.songPositionDelta += FlxG.elapsed * 1000 * (FlxG.sound?.music?.pitch ?? 1);
-
     // only update the timestamp if songPosition actually changed
     // which it doesn't do every frame!
     if (prevTime != this.songPosition)
@@ -515,6 +513,15 @@ class Conductor
       prevTime = this.songPosition;
       prevTimestamp = Std.int(Timer.stamp() * 1000);
     }
+  }
+
+  /**
+   * Returns a more accurate music time for higher framerates.
+   * @return Float
+   */
+  public function getTimeWithDelta():Float
+  {
+    return this.songPosition + this.songPositionDelta;
   }
 
   /**
