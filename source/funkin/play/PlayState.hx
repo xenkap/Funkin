@@ -1264,6 +1264,7 @@ class PlayState extends MusicBeatSubState
       // Resume music if we paused it.
       if (musicPausedBySubState)
       {
+        Conductor.instance.waitingFramePosition = 1;
         FlxG.sound.music.play();
         musicPausedBySubState = false;
       }
@@ -1367,6 +1368,7 @@ class PlayState extends MusicBeatSubState
     }
     #end
 
+    Conductor.instance.waitingFramePosition = 1;
     super.onFocus();
   }
 
@@ -2093,6 +2095,7 @@ class PlayState extends MusicBeatSubState
     // trace('${FlxG.sound.music.time}');
     // trace('${vocals.time}');
 
+    Conductor.instance.waitingFramePosition = 2;
     FlxG.sound.music.play(false, FlxG.sound.music.time, minSongLength);
     vocals.play(false, FlxG.sound.music.time, minSongLength);
 
@@ -2128,12 +2131,14 @@ class PlayState extends MusicBeatSubState
     // Skip this if the music is paused (GameOver, Pause menu, start-of-song offset, etc.)
     if (!(FlxG.sound.music?.playing ?? false)) return;
 
-    var timeToPlayAt:Float = Math.min(FlxG.sound.music.length, Math.max(Math.min(Conductor.instance.combinedOffset, 0), Conductor.instance.songPosition) - Conductor.instance.combinedOffset);
+    var timeToPlayAt:Float = Math.min(FlxG.sound.music.length,
+      Math.max(Math.min(Conductor.instance.combinedOffset, 0), Conductor.instance.songPosition) - Conductor.instance.combinedOffset);
     trace('Resyncing vocals to ${timeToPlayAt}');
 
     FlxG.sound.music.pause();
     vocals.pause();
 
+    Conductor.instance.waitingFramePosition = 2;
     FlxG.sound.music.time = timeToPlayAt;
     FlxG.sound.music.play(false, timeToPlayAt, minSongLength);
 
@@ -3318,6 +3323,7 @@ class PlayState extends MusicBeatSubState
      */
   public function pauseMusic():Void
   {
+    Conductor.instance.waitingFramePosition = 1;
     if (FlxG.sound.music != null) FlxG.sound.music.pause();
     if (vocals != null) vocals.pause();
   }

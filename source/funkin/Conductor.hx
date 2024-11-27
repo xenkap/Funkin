@@ -290,6 +290,19 @@ class Conductor
   }
 
   /**
+   * Forces `frameSongPosition` to stop updating until this reaches 0. Decrements itself when `songPosition` updates.
+   * This is useful to prevent bugs like notes moving while the song seems to be paused on the player's end.
+   * Encountered a lot on some(?) distributions of Linux, where retrieving audio position seems to account for device latency.
+   */
+  public var waitingFramePosition(default, set):Int = 0;
+
+  function set_waitingFramePosition(value:Int)
+  {
+    if (value > 0) this.frameSongPosition = this.songPosition;
+    return waitingFramePosition = value;
+  }
+
+  /**
    * The number of beats in a measure. May be fractional depending on the time signature.
    */
   public var beatsPerMeasure(get, never):Float;
@@ -418,7 +431,9 @@ class Conductor
     {
       songPos = currentTime;
     }
-    var frameSongPos:Float = frameSongPosition + FlxG.elapsed * 1000;
+
+    var frameSongPos:Float = frameSongPosition;
+    if (waitingFramePosition == 0) frameSongPos += FlxG.elapsed * 1000;
 
     // Take into account instrumental and file format song offsets.
     songPos += applyOffsets ? (combinedOffset) : 0;
@@ -500,6 +515,7 @@ class Conductor
     {
       // Set the frameSongPosition to the actual songPosition every time it actually changes to prevent desync
       frameSongPosition = this.songPosition;
+      if (FlxG.sound.music != null && FlxG.sound.music.playing && waitingFramePosition > 0) waitingFramePosition--;
 
       // Update the timestamp for use in-between frames
       prevTime = this.songPosition;
