@@ -503,6 +503,8 @@ class Conductor
       this.onMeasureHit.dispatch();
     }
 
+    this.songPositionDelta += FlxG.elapsed * 1000 * (FlxG.sound?.music?.pitch ?? 1);
+
     // only update the timestamp if songPosition actually changed
     // which it doesn't do every frame!
     if (prevTime != this.songPosition)
