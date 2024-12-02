@@ -98,21 +98,6 @@ class Conductor
    */
   var songPositionDelta(default, null):Float = 0;
 
-  /**
-   * The device latency calculated by `Conductor.instance.updateDeviceLatency()`.
-   * Generally used for linux builds, but may also be useful on other devices...?
-   */
-  public var linuxDeviceLatency(default, null):Float = 0;
-
-  var _retrievingDeviceLatency:Null<FlxSound> = null;
-  var _latencyElapsed:Float = 0;
-
-  /**
-   * When false, waits for `songPosition` to update.
-   * Toggles itself true when it does.
-   */
-  public var isTimeUpdating(default, null):Bool = true;
-
   var prevTimestamp:Float = 0;
   var prevTime:Float = 0;
 
@@ -304,6 +289,19 @@ class Conductor
   }
 
   /**
+   * Forces `frameSongPosition` to stop updating until this reaches 0. Decrements itself when `songPosition` updates.
+   * This is useful to prevent bugs like notes moving while the song seems to be paused on the player's end.
+   * Encountered a lot on some(?) distributions of Linux, where retrieving audio position seems to account for device latency.
+   */
+  public var waitingFramePosition(default, set):Int = 0;
+
+  function set_waitingFramePosition(value:Int)
+  {
+    // if (value > 0) this.frameSongPosition = this.songPosition;
+    return waitingFramePosition = value;
+  }
+
+  /**
    * The number of beats in a measure. May be fractional depending on the time signature.
    */
   public var beatsPerMeasure(get, never):Float;
@@ -450,25 +448,8 @@ class Conductor
       this.songPosition = songPos;
     }
 
-    // Nya
-    // Calculates the device latency of the damn thing
-    if (_retrievingDeviceLatency != null && _retrievingDeviceLatency.playing)
-    {
-      if (_retrievingDeviceLatency.time == 0) _latencyElapsed += FlxG.elapsed * 1000;
-      else
-      {
-        linuxDeviceLatency = Math.max(0, _latencyElapsed - _retrievingDeviceLatency.time);
-        trace('[CONDUCTOR] Got device latency! Value: ' + linuxDeviceLatency);
-
-        _latencyElapsed = 0;
-        _retrievingDeviceLatency.pause();
-        _retrievingDeviceLatency.time = 0;
-      }
-    }
-
-    if (_retrievingDeviceLatency == null) updateDeviceLatency();
-
     // Set the song position we are at (for purposes of calculating note positions, etc).
+
     currentTimeChange = timeChanges[0];
     if (this.songPosition > 0.0)
     {
@@ -528,37 +509,12 @@ class Conductor
     // which it doesn't do every frame!
     if (prevTime != this.songPosition)
     {
-      isTimeUpdating = true;
       this.songPositionDelta = 0;
 
       // Update the timestamp for use in-between frames
       prevTime = this.songPosition;
       prevTimestamp = Std.int(Timer.stamp() * 1000);
     }
-  }
-
-  public function correctSongPosition()
-  {
-    if ((linuxDeviceLatency == 0) || !isTimeUpdating || (FlxG.sound.music == null)) return;
-    isTimeUpdating = false;
-
-    this.songPositionDelta -= linuxDeviceLatency;
-    FlxG.sound.music.time += linuxDeviceLatency;
-
-    prevTime = FlxG.sound.music.time;
-    prevTimestamp = Std.int(Timer.stamp() * 1000);
-  }
-
-  public function updateDeviceLatency()
-  {
-    if (_retrievingDeviceLatency == null)
-    {
-      _retrievingDeviceLatency = new FlxSound().loadEmbedded(Paths.sound('silenceDeviceLatency'));
-      FlxG.sound.list.add(_retrievingDeviceLatency);
-    }
-
-    _latencyElapsed = 0;
-    _retrievingDeviceLatency.play();
   }
 
   /**

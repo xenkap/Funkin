@@ -757,7 +757,6 @@ class PlayState extends MusicBeatSubState
     // This step ensures z-indexes are applied properly,
     // and it's important to call it last so all elements get affected.
     refresh();
-    Conductor.instance.updateDeviceLatency();
   }
 
   function assertChartExists():Bool
@@ -966,7 +965,6 @@ class PlayState extends MusicBeatSubState
             boyfriendPos = currentStage.getBoyfriend().getScreenPosition();
           }
 
-          Conductor.instance.updateDeviceLatency();
           var pauseSubState:FlxSubState = new PauseSubState({mode: isChartingMode ? Charting : Standard});
 
           FlxTransitionableState.skipNextTransIn = true;
@@ -1266,8 +1264,7 @@ class PlayState extends MusicBeatSubState
       // Resume music if we paused it.
       if (musicPausedBySubState)
       {
-        Conductor.instance.correctSongPosition();
-        vocals.time = FlxG.sound.music.time;
+        Conductor.instance.waitingFramePosition = 1;
         FlxG.sound.music.play();
         musicPausedBySubState = false;
       }
@@ -1370,8 +1367,8 @@ class PlayState extends MusicBeatSubState
       }
     }
     #end
-    Conductor.instance.correctSongPosition();
-    vocals.time = FlxG.sound.music.time;
+
+    Conductor.instance.waitingFramePosition = 1;
     super.onFocus();
   }
 
@@ -2098,7 +2095,7 @@ class PlayState extends MusicBeatSubState
     // trace('${FlxG.sound.music.time}');
     // trace('${vocals.time}');
 
-    Conductor.instance.correctSongPosition();
+    Conductor.instance.waitingFramePosition = 2;
     FlxG.sound.music.play(false, FlxG.sound.music.time, minSongLength);
     vocals.play(false, FlxG.sound.music.time, minSongLength);
 
@@ -2141,12 +2138,12 @@ class PlayState extends MusicBeatSubState
     FlxG.sound.music.pause();
     vocals.pause();
 
+    Conductor.instance.waitingFramePosition = 2;
     FlxG.sound.music.time = timeToPlayAt;
-    Conductor.instance.correctSongPosition();
-    vocals.time = FlxG.sound.music.time;
+    FlxG.sound.music.play(false, timeToPlayAt, minSongLength);
 
-    FlxG.sound.music.play(false, FlxG.sound.music.time, minSongLength);
-    vocals.play(false, FlxG.sound.music.time, minSongLength);
+    vocals.time = timeToPlayAt;
+    vocals.play(false, timeToPlayAt, minSongLength);
   }
 
   /**
@@ -3326,8 +3323,7 @@ class PlayState extends MusicBeatSubState
      */
   public function pauseMusic():Void
   {
-    Conductor.instance.correctSongPosition();
-    vocals.time = FlxG.sound.music.time;
+    Conductor.instance.waitingFramePosition = 1;
     if (FlxG.sound.music != null) FlxG.sound.music.pause();
     if (vocals != null) vocals.pause();
   }
