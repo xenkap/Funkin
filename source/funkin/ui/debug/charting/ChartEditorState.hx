@@ -1730,6 +1730,11 @@ class ChartEditorState extends UIState // UIState derives from MusicBeatState
   var menubarItemSaveChartAs:MenuItem;
 
   /**
+   * The `File -> Save Raw Chart` menu item.
+   */
+  var menubarItemSaveRawChart:MenuItem;
+
+  /**
    * The `File -> Preferences` menu item.
    */
   var menubarItemPreferences:MenuItem;
@@ -2926,6 +2931,7 @@ class ChartEditorState extends UIState // UIState derives from MusicBeatState
       }
     };
     menubarItemSaveChartAs.onClick = _ -> this.exportAllSongData(false, null);
+    menubarItemSaveRawChart.onClick = _ -> this.exportAllRawSongData(false, null);
     menubarItemExit.onClick = _ -> quitChartEditor();
 
     // Edit

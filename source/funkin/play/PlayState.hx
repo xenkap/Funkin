@@ -1462,7 +1462,7 @@ class PlayState extends MusicBeatSubState
       }
 
       if (!startingSong
-        && (Math.abs(FlxG.sound.music.time - correctSync) > 5 || Math.abs(playerVoicesError) > 5 || Math.abs(opponentVoicesError) > 5))
+        && (Math.abs(FlxG.sound.music.time - correctSync) > 15 || Math.abs(playerVoicesError) > 15 || Math.abs(opponentVoicesError) > 15))
       {
         trace("VOCALS NEED RESYNC");
         if (vocals != null)

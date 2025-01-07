@@ -366,6 +366,96 @@ class ChartEditorImportExportHandler
    * @param onSaveCb Callback for when the file is saved.
    * @param onCancelCb Callback for when saving is cancelled.
    */
+  public static function exportAllRawSongData(state:ChartEditorState, force:Bool = false, targetPath:Null<String>, ?onSaveCb:String->Void,
+      ?onCancelCb:Void->Void):Void
+  {
+    var zipEntries:Array<haxe.zip.Entry> = [];
+
+    var variations = state.availableVariations;
+
+    for (variation in variations)
+    {
+      var variationId:String = variation;
+      if (variation == '' || variation == 'default' || variation == 'normal')
+      {
+        variationId = '';
+      }
+
+      if (variationId == '')
+      {
+        var variationMetadata:Null<SongMetadata> = state.songMetadata.get(variation);
+        if (variationMetadata != null)
+        {
+          variationMetadata.version = funkin.data.song.SongRegistry.SONG_METADATA_VERSION;
+          variationMetadata.generatedBy = funkin.data.song.SongRegistry.DEFAULT_GENERATEDBY;
+          zipEntries.push(FileUtil.makeZIPEntry('${state.currentSongId}-metadata.json', variationMetadata.serialize()));
+        }
+        var variationChart:Null<SongChartData> = state.songChartData.get(variation);
+        if (variationChart != null)
+        {
+          variationChart.version = funkin.data.song.SongRegistry.SONG_CHART_DATA_VERSION;
+          variationChart.generatedBy = funkin.data.song.SongRegistry.DEFAULT_GENERATEDBY;
+          zipEntries.push(FileUtil.makeZIPEntry('${state.currentSongId}-chart.json', variationChart.serialize()));
+        }
+      }
+      else
+      {
+        var variationMetadata:Null<SongMetadata> = state.songMetadata.get(variation);
+        if (variationMetadata != null)
+        {
+          zipEntries.push(FileUtil.makeZIPEntry('${state.currentSongId}-metadata-$variationId.json', variationMetadata.serialize()));
+        }
+        var variationChart:Null<SongChartData> = state.songChartData.get(variation);
+        if (variationChart != null)
+        {
+          variationChart.version = funkin.data.song.SongRegistry.SONG_CHART_DATA_VERSION;
+          variationChart.generatedBy = funkin.data.song.SongRegistry.DEFAULT_GENERATEDBY;
+          zipEntries.push(FileUtil.makeZIPEntry('${state.currentSongId}-chart-$variationId.json', variationChart.serialize()));
+        }
+      }
+    }
+
+    var manifest:ChartManifestData = new ChartManifestData(state.currentSongId);
+    zipEntries.push(FileUtil.makeZIPEntry('manifest.json', manifest.serialize()));
+
+    trace('Exporting ${zipEntries.length} files...');
+
+    // Prompt and save.
+    var onSave:Array<String>->Void = function(paths:Array<String>) {
+      if (paths.length != 1)
+      {
+        trace('[WARN] Could not get save path.');
+        state.applyWindowTitle();
+      }
+      else
+      {
+        trace('Saved to "${paths[0]}"');
+        state.currentWorkingFilePath = paths[0];
+        state.applyWindowTitle();
+        if (onSaveCb != null) onSaveCb(paths[0]);
+      }
+    };
+
+    var onCancel:Void->Void = function() {
+      trace('Export cancelled.');
+      if (onCancelCb != null) onCancelCb();
+    };
+
+    trace('Exporting to user-defined location...');
+    try
+    {
+      FileUtil.saveMultipleFiles(zipEntries, onSave, onCancel, '${state.currentSongId}.${Constants.EXT_CHART}');
+      state.saveDataDirty = false;
+    }
+    catch (e) {}
+  }
+
+  /**
+   * @param force Whether to export without prompting. `false` will prompt the user for a location.
+   * @param targetPath where to export if `force` is `true`. If `null`, will export to the `backups` folder.
+   * @param onSaveCb Callback for when the file is saved.
+   * @param onCancelCb Callback for when saving is cancelled.
+   */
   public static function exportAllSongData(state:ChartEditorState, force:Bool = false, targetPath:Null<String>, ?onSaveCb:String->Void,
       ?onCancelCb:Void->Void):Void
   {
