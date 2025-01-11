@@ -14,6 +14,7 @@ class ChartEditorShortcutHandler
     state.menubarItemNewChart.shortcutText = ctrlOrCmd('N');
     state.menubarItemOpenChart.shortcutText = ctrlOrCmd('O');
     state.menubarItemSaveChartAs.shortcutText = ctrlOrCmd(shift('S'));
+    state.menubarItemSaveRawChart.shortcutText = ctrlOrCmd(shift('R'));
     state.menubarItemExit.shortcutText = ctrlOrCmd('Q');
 
     state.menubarItemUndo.shortcutText = ctrlOrCmd('Z');
