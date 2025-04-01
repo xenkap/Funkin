@@ -1371,6 +1371,9 @@ class PlayState extends MusicBeatSubState
     }
     #end
 
+    // Resume the countdown.
+    Countdown.resumeCountdown();
+
     super.onFocus();
   }
 
@@ -1396,6 +1399,9 @@ class PlayState extends MusicBeatSubState
         });
     }
     #end
+
+    // Pause the countdown.
+    Countdown.pauseCountdown();
 
     super.onFocusLost();
   }
