@@ -98,6 +98,21 @@ enum abstract ScriptEventType(String) from String to String
   var NOTE_GHOST_MISS = 'NOTE_GHOST_MISS';
 
   /**
+   * Called when a character releases a hold note.
+   *
+   * This event is not cancelable.
+   */
+  var HOLD_NOTE_RELEASE = 'HOLD_NOTE_RELEASE';
+
+  /**
+   * Called when a character regrabs a hold note.
+   *
+   * This event IS cancelable! Canceling this event prevents the sustain from being regrabbed,
+   *   and will likely result in a miss later.
+   */
+  var HOLD_NOTE_REGRAB = 'HOLD_NOTE_REGRAB';
+
+  /**
    * Called when a song event is reached in the chart.
    *
    * This event IS cancelable! Cancelling this event prevents the event from being triggered,

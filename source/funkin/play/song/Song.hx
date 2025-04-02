@@ -653,6 +653,10 @@ class Song implements IPlayStateScriptedClass implements IRegistryEntry<SongMeta
 
   public function onNoteGhostMiss(event:GhostMissNoteScriptEvent):Void {};
 
+  public function onSustainRegrab(event:SustainScriptEvent) {}
+
+  public function onSustainRelease(event:ReleaseSustainScriptEvent) {}
+
   public function onSongEvent(event:SongEventScriptEvent):Void {};
 
   public function onStepHit(event:SongTimeScriptEvent):Void {};

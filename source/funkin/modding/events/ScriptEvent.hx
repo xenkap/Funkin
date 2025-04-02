@@ -228,6 +228,52 @@ class GhostMissNoteScriptEvent extends ScriptEvent
 }
 
 /**
+ * An event that is fired associated with a specific sustain trail.
+ */
+class SustainScriptEvent extends ScriptEvent
+{
+  /**
+   * The sustain associated with this event.
+   * You cannot replace it, but you can edit it.
+   */
+  public var note(default, null):SustainTrail;
+
+  public function new(type:ScriptEventType, note:NoteSprite, cancelable:Bool = false):Void
+  {
+    super(type, cancelable);
+    this.note = note;
+  }
+
+  public override function toString():String
+  {
+    return 'SustainScriptEvent(type=' + type + ', cancelable=' + cancelable + ', note=' + note + ')';
+  }
+}
+
+/**
+ * An event that is fired when a sustain is released, either naturally or by mistake.
+ */
+class ReleaseSustainScriptEvent extends SustainScriptEvent
+{
+  /**
+   * Whether this sustain was let go too early,
+   * or if we simply reached the end of it.
+   */
+  public var tooEarly(default, null):Bool;
+
+  public function new(note:NoteSprite, tooEarly:Bool = false):Void
+  {
+    super(HOLD_NOTE_RELEASE, note, true);
+    this.tooEarly = tooEarly;
+  }
+
+  public override function toString():String
+  {
+    return 'ReleaseSustainScriptEvent(note=' + note + ', tooEarly=' + tooEarly + ')';
+  }
+}
+
+/**
  * An event that is fired when the song reaches an event.
  */
 class SongEventScriptEvent extends ScriptEvent

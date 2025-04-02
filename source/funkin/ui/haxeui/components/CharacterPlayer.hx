@@ -251,6 +251,26 @@ class CharacterPlayer extends Box
   {
     if (character != null) character.onNoteGhostMiss(event);
   }
+
+  /**
+   * Called when a sustain is regrabbed after being released.
+   * Used to play character animations.
+   * @param event The event.
+   */
+  public function onSustainRegrab(event:SustainScriptEvent):Void
+  {
+    if (character != null) character.onSustainRegrab(event);
+  }
+
+  /**
+   * Called when a sustain is released, naturally or mistakenly.
+   * Used to play character animations.
+   * @param event The event.
+   */
+  public function onSustainRelease(event:ReleaseSustainScriptEvent):Void
+  {
+    if (character != null) character.onSustainRelease(event);
+  }
 }
 
 @:access(funkin.ui.haxeui.components.CharacterPlayer)

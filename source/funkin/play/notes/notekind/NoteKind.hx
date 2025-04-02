@@ -67,6 +67,10 @@ class NoteKind implements INoteScriptedClass
   public function onNoteHit(event:HitNoteScriptEvent):Void {}
 
   public function onNoteMiss(event:NoteScriptEvent):Void {}
+
+  public function onSustainRegrab(event:SustainScriptEvent) {}
+
+  public function onSustainRelease(event:ReleaseSustainScriptEvent) {}
 }
 
 /**

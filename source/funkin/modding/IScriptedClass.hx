@@ -74,6 +74,16 @@ interface INoteScriptedClass extends IScriptedClass
    * Called when EITHER player (usually the player) misses a note.
    */
   public function onNoteMiss(event:NoteScriptEvent):Void;
+
+  /**
+   * Called when a sustain is regrabbed by the player.
+   */
+  public function onSustainRegrab(event:NoteScriptEvent):Void;
+
+  /**
+   * Called when a sustain is released, either naturally or as a miss.
+   */
+  public function onSustainRelease(event:NoteScriptEvent):Void;
 }
 
 /**
