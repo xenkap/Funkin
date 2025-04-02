@@ -718,18 +718,7 @@ class Strumline extends FlxSpriteGroup
     #end
   }
 
-  public function hitSustainNote(holdNote:SustainTrail):Void
-  {
-    holdNote.hitNote = true;
-    holdNote.missedNote = false;
-
-    var lastLength = note.holdNoteSprite.sustainLength;
-    holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - (conductorInUse.songPosition - conductorInUse.inputOffset);
-
-    if (rewardSustains) PlayState?.instance.sustainHit(note.holdNoteSprite, lastLength);
-  }
-
-  public function releaseSustainNote(holdNote:SustainTrail, ?timestamp:Int64):Void
+  public function hitHoldNote(holdNote:SustainTrail):Void
   {
     holdNote.hitNote = true;
     holdNote.missedNote = false;

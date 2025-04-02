@@ -540,31 +540,6 @@ class BaseCharacter extends Bopper
   }
 
   /**
-   * Every time a note is hit, check if the note is from the same strumline.
-   * If it is, then play the sing animation.
-   */
-  public override function onSustainRegrab(event:RegrabSustainScriptEvent)
-  {
-    super.onSustainRegrab(event);
-
-    // If another script cancelled the event, don't do anything.
-    if (event.eventCanceled) return;
-
-    if (event.note.noteData.getMustHitNote() && characterType == BF)
-    {
-      // If the note is from the same strumline, play the sing animation.
-      this.playSingAnimation(event.note.noteData.getDirection(), false);
-      holdTimer = 0;
-    }
-    else if (!event.note.noteData.getMustHitNote() && characterType == DAD)
-    {
-      // If the note is from the same strumline, play the sing animation.
-      this.playSingAnimation(event.note.noteData.getDirection(), false);
-      holdTimer = 0;
-    }
-  }
-
-  /**
    * Every time a note is missed, check if the note is from the same strumline.
    * If it is, then play the sing animation.
    */
