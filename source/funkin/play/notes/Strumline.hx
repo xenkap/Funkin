@@ -17,6 +17,8 @@ import funkin.ui.options.PreferencesMenu;
 import funkin.util.SortUtil;
 import funkin.modding.events.ScriptEvent;
 import funkin.play.notes.notekind.NoteKindManager;
+import funkin.input.PreciseInputManager;
+import haxe.Int64;
 
 /**
  * A group of sprites which handles the receptor, the note splashes, and the notes (with sustains) for a given player.
@@ -66,6 +68,13 @@ class Strumline extends FlxSpriteGroup
    * False means it's controlled by the opponent or Bot Play.
    */
   public var isPlayer:Bool;
+
+  /**
+   * Whether this strumline should reward scores on hold.
+   * Should usually be the same as isPlayer, but modders may want to modify sustain/input behavior.
+   * Assumes strumline is in PlayState, nothing happens otherwise.
+   */
+  public var rewardSustains:Bool;
 
   /**
    * Usually you want to keep this as is, but if you are using a Strumline and
@@ -132,12 +141,14 @@ class Strumline extends FlxSpriteGroup
   var nextNoteIndex:Int = -1;
 
   var heldKeys:Array<Bool> = [];
+  var releaseTime:Array<Null<Int64>> = [];
 
   public function new(noteStyle:NoteStyle, isPlayer:Bool)
   {
     super();
 
     this.isPlayer = isPlayer;
+    this.rewardSustains = isPlayer;
     this.noteStyle = noteStyle;
 
     this.strumlineNotes = new FlxTypedSpriteGroup<StrumlineNote>();
@@ -426,6 +437,21 @@ class Strumline extends FlxSpriteGroup
 
           holdNote.missedNote = true;
           holdNote.visible = true;
+
+          if (releaseTime[holdNote.noteDirection] != null)
+          {
+            var inputLatencyNs:Int64 = PreciseInputManager.getCurrentTimestamp() - releaseTime[holdNote.noteDirection];
+            var inputLatencyMs:Float = inputLatencyNs.toFloat() / Constants.NS_PER_MS;
+
+            var lastLength = holdNote.sustainLength;
+            holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition - inputLatencyMs
+              + conductorInUse.inputOffset;
+
+            // Don't reward hitting too early, don't penalize hitting too late
+            if (rewardSustains) PlayState?.instance.sustainHit(holdNote, lastLength);
+
+            releaseTime[holdNote.noteDirection] = null;
+          }
         }
       }
 
@@ -497,7 +523,11 @@ class Strumline extends FlxSpriteGroup
         holdConfirm(holdNote.noteDirection);
         holdNote.visible = true;
 
-        holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition;
+        var lastLength = holdNote.sustainLength;
+        holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition + conductorInUse.inputOffset;
+
+        // Don't reward hitting too early, don't penalize hitting too late
+        if (rewardSustains) PlayState?.instance.sustainHit(holdNote, lastLength);
 
         if (holdNote.sustainLength <= 10)
         {
@@ -595,9 +625,11 @@ class Strumline extends FlxSpriteGroup
     heldKeys[dir] = true;
   }
 
-  public function releaseKey(dir:NoteDirection):Void
+  public function releaseKey(dir:NoteDirection, ?timestamp:Int64):Void
   {
     heldKeys[dir] = false;
+    // Only record the first releaseTime in a frame.
+    if (releaseTime[dir] == null) releaseTime[dir] = timestamp;
   }
 
   public function isKeyHeld(dir:NoteDirection):Bool
@@ -691,7 +723,10 @@ class Strumline extends FlxSpriteGroup
     holdNote.hitNote = true;
     holdNote.missedNote = false;
 
-    holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition;
+    var lastLength = note.holdNoteSprite.sustainLength;
+    holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - (conductorInUse.songPosition - conductorInUse.inputOffset);
+
+    if (rewardSustains) PlayState?.instance.sustainHit(note.holdNoteSprite, lastLength);
   }
 
   public function killNote(note:NoteSprite):Void
