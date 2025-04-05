@@ -682,7 +682,6 @@ class SongMenuItem extends FlxSpriteGroup
       var visibility = !value;
 
       ranking.visible = visibility;
-      blurredRanking.visible = visibility;
       favIcon.visible = visibility;
       favIconBlurred.visible = visibility;
       newText.visible = visibility;
