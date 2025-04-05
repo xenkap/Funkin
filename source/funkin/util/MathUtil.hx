@@ -112,13 +112,14 @@ class MathUtil
    *
    * @return A value between the current value and the target value.
    */
-  public static function smoothLerp(current:Float, target:Float, elapsed:Float, duration:Float, precision:Float = 1 / 100):Float
+  public static function smoothLerp(current:Float, target:Float, ?elapsed:Float, duration:Float, precision:Float = 1 / 100):Float
   {
     // An alternative algorithm which uses a separate half-life value:
     // var halfLife:Float = -duration / logBase(2, precision);
     // lerp(current, target, 1 - exp2(-elapsed / halfLife));
 
     if (current == target) return target;
+    if (elapsed == null) elapsed = FlxG.elapsed;
 
     var result:Float = lerp(current, target, 1 - Math.pow(precision, elapsed / duration));
 
