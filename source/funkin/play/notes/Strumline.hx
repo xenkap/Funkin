@@ -12,6 +12,8 @@ import funkin.graphics.FunkinSprite;
 import funkin.data.song.SongData.SongNoteData;
 import funkin.util.SortUtil;
 import funkin.play.notes.notekind.NoteKindManager;
+import funkin.input.PreciseInputManager;
+import haxe.Int64;
 
 /**
  * A group of sprites which handles the receptor, the note splashes, and the notes (with sustains) for a given player.
@@ -61,6 +63,13 @@ class Strumline extends FlxSpriteGroup
    * False means it's controlled by the opponent or Bot Play.
    */
   public var isPlayer:Bool;
+
+  /**
+   * Whether this strumline should reward scores on hold.
+   * Should usually be the same as isPlayer, but modders may want to modify sustain/input behavior.
+   * Assumes strumline is in PlayState, nothing happens otherwise.
+   */
+  public var rewardSustains:Bool;
 
   /**
    * Usually you want to keep this as is, but if you are using a Strumline and
@@ -132,11 +141,14 @@ class Strumline extends FlxSpriteGroup
 
   static final BACKGROUND_PAD:Int = 16;
 
+  var releaseTime:Array<Null<Int64>> = [];
+
   public function new(noteStyle:NoteStyle, isPlayer:Bool)
   {
     super();
 
     this.isPlayer = isPlayer;
+    this.rewardSustains = isPlayer;
     this.noteStyle = noteStyle;
 
     this.strumlineNotes = new FlxTypedSpriteGroup<StrumlineNote>();
@@ -447,9 +459,25 @@ class Strumline extends FlxSpriteGroup
         {
           // Stopped pressing the hold note.
           playStatic(holdNote.noteDirection);
+          holdNote.regrabTimer = Constants.REGRAB_WINDOW_MS / Constants.MS_PER_SEC;
+
           holdNote.missedNote = true;
           holdNote.visible = true;
-          holdNote.alpha = 0.0; // Completely hide the dropped hold note.
+
+          if (releaseTime[holdNote.noteDirection] != null)
+          {
+            var inputLatencyNs:Int64 = PreciseInputManager.getCurrentTimestamp() - releaseTime[holdNote.noteDirection];
+            var inputLatencyMs:Float = inputLatencyNs.toFloat() / Constants.NS_PER_MS;
+
+            var lastLength = holdNote.sustainLength;
+            holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition - inputLatencyMs
+              + conductorInUse.inputOffset;
+
+            // Don't reward hitting too early, don't penalize hitting too late
+            if (rewardSustains) PlayState?.instance.sustainHit(holdNote, lastLength);
+
+            releaseTime[holdNote.noteDirection] = null;
+          }
         }
       }
 
@@ -492,7 +520,7 @@ class Strumline extends FlxSpriteGroup
         // Hold note was dropped before completing, keep it in its clipped state.
         holdNote.visible = true;
 
-        var yOffset:Float = (holdNote.fullSustainLength - holdNote.sustainLength) * Constants.PIXELS_PER_MS;
+        var yOffset:Float = holdNote.fullSustainLength - holdNote.sustainLength;
 
         var vwoosh:Bool = false;
 
@@ -500,11 +528,11 @@ class Strumline extends FlxSpriteGroup
         {
           if (Preferences.downscroll)
           {
-            holdNote.y = this.y - INITIAL_OFFSET + calculateNoteYPos(holdNote.strumTime, vwoosh) - holdNote.height + STRUMLINE_SIZE / 2;
+            holdNote.y = this.y - INITIAL_OFFSET + calculateNoteYPos(holdNote.strumTime + yOffset, vwoosh) - holdNote.height + STRUMLINE_SIZE / 2;
           }
           else
           {
-            holdNote.y = this.y - INITIAL_OFFSET + calculateNoteYPos(holdNote.strumTime, vwoosh) + yOffset + STRUMLINE_SIZE / 2;
+            holdNote.y = this.y - INITIAL_OFFSET + calculateNoteYPos(holdNote.strumTime + yOffset, vwoosh) + STRUMLINE_SIZE / 2;
           }
         }
 
@@ -521,7 +549,11 @@ class Strumline extends FlxSpriteGroup
         holdConfirm(holdNote.noteDirection);
         holdNote.visible = true;
 
+        var lastLength = holdNote.sustainLength;
         holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition + conductorInUse.inputOffset;
+
+        // Don't reward hitting too early, don't penalize hitting too late
+        if (rewardSustains) PlayState?.instance.sustainHit(holdNote, lastLength);
 
         if (holdNote.sustainLength <= 10)
         {
@@ -619,9 +651,11 @@ class Strumline extends FlxSpriteGroup
     heldKeys[dir] = true;
   }
 
-  public function releaseKey(dir:NoteDirection):Void
+  public function releaseKey(dir:NoteDirection, ?timestamp:Int64):Void
   {
     heldKeys[dir] = false;
+    // Only record the first releaseTime in a frame.
+    if (releaseTime[dir] == null) releaseTime[dir] = timestamp;
   }
 
   public function isKeyHeld(dir:NoteDirection):Bool
@@ -699,22 +733,26 @@ class Strumline extends FlxSpriteGroup
     }
     else
     {
-      note.alpha = 0.5;
+      note.alpha *= 0.5;
       note.desaturate();
     }
 
-    if (note.holdNoteSprite != null)
-    {
-      note.holdNoteSprite.hitNote = true;
-      note.holdNoteSprite.missedNote = false;
-
-      note.holdNoteSprite.sustainLength = (note.holdNoteSprite.strumTime + note.holdNoteSprite.fullSustainLength)
-        - (conductorInUse.songPosition - conductorInUse.inputOffset);
-    }
+    if (note.holdNoteSprite != null) hitHoldNote(note.holdNoteSprite);
 
     #if FEATURE_GHOST_TAPPING
     ghostTapTimer = Constants.GHOST_TAP_DELAY;
     #end
+  }
+
+  public function hitHoldNote(holdNote:SustainTrail):Void
+  {
+    holdNote.hitNote = true;
+    holdNote.missedNote = false;
+
+    var lastLength = holdNote.sustainLength;
+    holdNote.sustainLength = (holdNote.strumTime + holdNote.fullSustainLength) - conductorInUse.songPosition + conductorInUse.inputOffset;
+
+    if (rewardSustains) PlayState?.instance.sustainHit(holdNote, lastLength);
   }
 
   public function killNote(note:NoteSprite):Void
