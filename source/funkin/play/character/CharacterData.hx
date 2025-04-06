@@ -9,6 +9,7 @@ import funkin.play.character.ScriptedCharacter.ScriptedMultiSparrowCharacter;
 import funkin.play.character.ScriptedCharacter.ScriptedPackerCharacter;
 import funkin.play.character.ScriptedCharacter.ScriptedSparrowCharacter;
 import funkin.util.assets.DataAssets;
+import funkin.util.FileUtil;
 import funkin.util.VersionUtil;
 import haxe.Json;
 import flixel.graphics.frames.FlxFrame;
@@ -398,6 +399,12 @@ class CharacterDataParser
     return rawJson;
   }
 
+  // For migration !!
+  static function saveCharacterFile(charPath:String, data:CharacterData, pretty:Bool = true):String
+  {
+    FileUtil.writeStringToPath('characterMigration/${charPath}', Json.stringify(data, null, pretty ? '    ' : null), Force);
+  }
+
   static function migrateCharacterData(rawJson:String, charId:String):Null<CharacterData>
   {
     // If you update the character data format in a breaking way,
@@ -410,9 +417,59 @@ class CharacterDataParser
     }
     catch (e)
     {
-      trace('  Error parsing data for character: ${charId}');
-      trace('    ${e}');
-      return null;
+      // Let's see if we can load it as a Psych character!
+      try
+      {
+        trace('  Parsing character ${charId}... Psych Engine style!');
+        var psychData:PsychCharacterData = cast Json.parse(rawJson);
+        var anims:Array<AnimationData> = [];
+
+        psychData.position.y -= 350;
+
+        var charData:CharacterData =
+          {
+            name: psychData.anim,
+            prefix: psychData.name,
+            frameIndices: psychData.frames,
+            singTime: psychData.sing_duration,
+            healthIcon:
+              {
+                id: psychData.healthIcon
+              },
+            animations: anims,
+            flipX: psychData.flip_x,
+            isPixel: psychData.no_antialiasing,
+            offsets: psychData.position,
+            cameraOffsets: psychData.camera_position,
+            scale: psychData.scale
+          }
+
+        for (psychAnim in psychData.animations)
+        {
+          anims.push(
+            {
+              name: psychAnim.anim,
+              prefix: psychAnim.name,
+              frameIndices: psychAnim.frames,
+              frameRate: psychAnim.fps,
+              offsets: psychAnim.offsets,
+              looped: psychAnim.loop,
+            });
+        }
+
+        saveCharacterFile(charData);
+        trace('  Finished! Do take note that this does not do all of the work.');
+        trace('   | When porting Psych stages, note that Psych Engine places the characters');
+        trace('   | in the graphic origin (top-left) as opposed to the bottom/feet origin.');
+        trace('   | Also, you may need to invert the cameraOffset.x if it\'s a playable character.');
+        return charData;
+      }
+      catch (e)
+      {
+        trace('  Error parsing data for character: ${charId}');
+        trace('    ${e}');
+        return null;
+      }
     }
   }
 
