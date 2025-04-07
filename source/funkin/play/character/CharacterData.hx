@@ -424,13 +424,12 @@ class CharacterDataParser
         var psychData:PsychCharacterData = cast Json.parse(rawJson);
         var anims:Array<AnimationData> = [];
 
-        psychData.position.y -= 350;
+        psychData.position[1] -= 350;
 
         var charData:CharacterData =
           {
-            name: psychData.anim,
-            prefix: psychData.name,
-            frameIndices: psychData.frames,
+            name: psychData.name,
+            assetPath: psychData.image,
             singTime: psychData.sing_duration,
             healthIcon:
               {
