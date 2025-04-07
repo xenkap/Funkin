@@ -400,7 +400,7 @@ class CharacterDataParser
   }
 
   // For migration !!
-  static function saveCharacterFile(charPath:String, data:CharacterData, pretty:Bool = true):String
+  static function saveCharacterFile(charPath:String, data:CharacterData, pretty:Bool = true):Void
   {
     FileUtil.writeStringToPath('characterMigration/${charPath}', Json.stringify(data, null, pretty ? '    ' : null), Force);
   }
@@ -425,6 +425,25 @@ class CharacterDataParser
         var anims:Array<AnimationData> = [];
 
         psychData.position[1] -= 350;
+        var renderType:CharacterRenderType = null;
+        var checkForRender:String = Paths.file('images/' + psychData.image + '/Animation.json', TEXT);
+        if (FileUtil.doesFileExist(checkForRender))
+        {
+          renderType = CharacterRenderType.AnimateAtlas;
+        }
+        else
+        {
+          checkForRender = Paths.file('images/' + psychData.image + '.txt', TEXT);
+          if (FileUtil.doesFileExist(checkForRender))
+          {
+            renderType = CharacterRenderType.Packer;
+          }
+          else
+          {
+            // Assume sparrow at this point.
+            renderType = CharacterRenderType.Sparrow;
+          }
+        }
 
         var charData:CharacterData =
           {
@@ -444,23 +463,29 @@ class CharacterDataParser
             isPixel: psychData.no_antialiasing,
             offsets: psychData.position,
             cameraOffsets: psychData.camera_position,
-            scale: psychData.scale
+            scale: psychData.scale,
+            version: CHARACTER_DATA_VERSION,
+            startingAnimation: DEFAULT_STARTINGANIM,
+            renderType: renderType,
+            death: null
           }
 
         for (psychAnim in psychData.animations)
         {
+          if (psychAnim.name == 'danceRight') charData.startingAnimation = 'danceRight';
           anims.push(
             {
               name: psychAnim.anim,
               prefix: psychAnim.name,
-              frameIndices: psychAnim.frames,
+              frameIndices: psychAnim.indices,
               frameRate: psychAnim.fps,
               offsets: psychAnim.offsets,
               looped: psychAnim.loop,
             });
         }
 
-        saveCharacterFile(charData);
+        validateCharacterData(charId, charData);
+        saveCharacterFile(charId, charData);
         trace('  Finished! Do take note that this does not do all of the work.');
         trace('   | When porting Psych stages, note that Psych Engine places the characters');
         trace('   | in the graphic origin (top-left) as opposed to the bottom/feet origin.');

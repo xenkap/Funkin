@@ -113,5 +113,7 @@ typedef PsychAnimArray =
    * ...Huh. It's the same on VSlice characters.
    * So it is...
    */
-  var offsets:Array<Int>;
+  var offsets:Array<Float>;
+
+  // var offsets:Array<Int>;
 }
