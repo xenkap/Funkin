@@ -433,7 +433,11 @@ class CharacterDataParser
             singTime: psychData.sing_duration,
             healthIcon:
               {
-                id: psychData.healthIcon
+                id: psychData.healthIcon,
+                scale: null,
+                flipX: null,
+                isPixel: null,
+                offsets: null
               },
             animations: anims,
             flipX: psychData.flip_x,
