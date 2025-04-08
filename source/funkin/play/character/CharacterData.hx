@@ -402,7 +402,7 @@ class CharacterDataParser
   // For migration !!
   static function saveCharacterFile(charPath:String, data:CharacterData, pretty:Bool = true):Void
   {
-    FileUtil.writeStringToPath('characterMigration/${charPath}', Json.stringify(data, null, pretty ? '    ' : null), Force);
+    FileUtil.writeStringToPath('characterMigration/${charPath}.json', Json.stringify(data, null, pretty ? '    ' : null), Force);
   }
 
   static function migrateCharacterData(rawJson:String, charId:String):Null<CharacterData>
@@ -412,92 +412,105 @@ class CharacterDataParser
 
     try
     {
-      var charData:CharacterData = cast Json.parse(rawJson);
+      var raw = Json.parse(rawJson);
+      if (raw.version != null)
+      {
+        var charData:CharacterData = cast raw;
+        return charData;
+      }
+    }
+    catch (e)
+    {
+      trace('  Error parsing data for character: ${charId}');
+      trace('    ${e}');
+      return null;
+    }
+    return parsePsychCharacterData(rawJson, charId);
+  }
+
+  static function parsePsychCharacterData(rawJson:String, charId:String):Null<CharacterData>
+  {
+    // Let's see if we can load it as a Psych character!
+    try
+    {
+      trace('  Parsing character ${charId}... Psych Engine style!');
+      var psychData:PsychCharacterData = cast Json.parse(rawJson);
+      var anims:Array<AnimationData> = [];
+
+      psychData.position[1] -= 350;
+      var renderType:CharacterRenderType = null;
+      var checkForRender:String = Paths.file('images/' + psychData.image + '/Animation.json', TEXT);
+      if (FileUtil.doesFileExist(checkForRender))
+      {
+        renderType = CharacterRenderType.AnimateAtlas;
+      }
+      else
+      {
+        checkForRender = Paths.file('images/' + psychData.image + '.txt', TEXT);
+        if (FileUtil.doesFileExist(checkForRender))
+        {
+          renderType = CharacterRenderType.Packer;
+        }
+        else
+        {
+          // Assume sparrow at this point.
+          renderType = CharacterRenderType.Sparrow;
+        }
+      }
+
+      var charData:CharacterData =
+        {
+          name: psychData.name ?? charId,
+          assetPath: psychData.image,
+          singTime: psychData.sing_duration,
+          healthIcon:
+            {
+              id: psychData.healthIcon,
+              scale: null,
+              flipX: null,
+              isPixel: null,
+              offsets: null
+            },
+          animations: anims,
+          flipX: psychData.flip_x,
+          isPixel: psychData.no_antialiasing,
+          offsets: psychData.position,
+          cameraOffsets: psychData.camera_position,
+          scale: psychData.scale,
+          version: CHARACTER_DATA_VERSION,
+          startingAnimation: DEFAULT_STARTINGANIM,
+          renderType: renderType,
+          death: null
+        }
+
+      for (psychAnim in psychData.animations)
+      {
+        if (psychAnim.name == 'danceRight') charData.startingAnimation = 'danceRight';
+        anims.push(
+          {
+            name: psychAnim.anim,
+            prefix: psychAnim.name,
+            frameIndices: psychAnim.indices,
+            frameRate: psychAnim.fps,
+            offsets: psychAnim.offsets,
+            looped: psychAnim.loop,
+          });
+      }
+
+      trace('$charId: $charData');
+      validateCharacterData(charId, charData);
+      saveCharacterFile(charId, charData);
+      trace('  Finished! Do take note that this does not do all of the work.');
+      trace('   | When porting Psych stages, note that Psych Engine places the characters');
+      trace('   | in the graphic origin (top-left) as opposed to the bottom/feet origin.');
+      trace('   | Also, you may need to invert the cameraOffset.x if it\'s a playable character.');
       return charData;
     }
     catch (e)
     {
-      // Let's see if we can load it as a Psych character!
-      try
-      {
-        trace('  Parsing character ${charId}... Psych Engine style!');
-        var psychData:PsychCharacterData = cast Json.parse(rawJson);
-        var anims:Array<AnimationData> = [];
-
-        psychData.position[1] -= 350;
-        var renderType:CharacterRenderType = null;
-        var checkForRender:String = Paths.file('images/' + psychData.image + '/Animation.json', TEXT);
-        if (FileUtil.doesFileExist(checkForRender))
-        {
-          renderType = CharacterRenderType.AnimateAtlas;
-        }
-        else
-        {
-          checkForRender = Paths.file('images/' + psychData.image + '.txt', TEXT);
-          if (FileUtil.doesFileExist(checkForRender))
-          {
-            renderType = CharacterRenderType.Packer;
-          }
-          else
-          {
-            // Assume sparrow at this point.
-            renderType = CharacterRenderType.Sparrow;
-          }
-        }
-
-        var charData:CharacterData =
-          {
-            name: psychData.name,
-            assetPath: psychData.image,
-            singTime: psychData.sing_duration,
-            healthIcon:
-              {
-                id: psychData.healthIcon,
-                scale: null,
-                flipX: null,
-                isPixel: null,
-                offsets: null
-              },
-            animations: anims,
-            flipX: psychData.flip_x,
-            isPixel: psychData.no_antialiasing,
-            offsets: psychData.position,
-            cameraOffsets: psychData.camera_position,
-            scale: psychData.scale,
-            version: CHARACTER_DATA_VERSION,
-            startingAnimation: DEFAULT_STARTINGANIM,
-            renderType: renderType,
-            death: null
-          }
-
-        for (psychAnim in psychData.animations)
-        {
-          if (psychAnim.name == 'danceRight') charData.startingAnimation = 'danceRight';
-          anims.push(
-            {
-              name: psychAnim.anim,
-              prefix: psychAnim.name,
-              frameIndices: psychAnim.indices,
-              frameRate: psychAnim.fps,
-              offsets: psychAnim.offsets,
-              looped: psychAnim.loop,
-            });
-        }
-
-        validateCharacterData(charId, charData);
-        saveCharacterFile(charId, charData);
-        trace('  Finished! Do take note that this does not do all of the work.');
-        trace('   | When porting Psych stages, note that Psych Engine places the characters');
-        trace('   | in the graphic origin (top-left) as opposed to the bottom/feet origin.');
-        trace('   | Also, you may need to invert the cameraOffset.x if it\'s a playable character.');
-        return charData;
-      }
-      catch (e)
-      {
-        trace('  Error parsing data for character: ${charId}');
-        trace('    ${e}');
-        return null;
-      }
+      trace('  Error parsing psych data for character: ${charId}');
+      trace('    ${e}');
+      return null;
     }
   }
 
