@@ -779,7 +779,7 @@ class FreeplayState extends MusicBeatSubState
       capsuleOnConfirmRandom(randomCapsule);
     };
 
-    if (fromCharSelect) randomCapsule.forcePosition();
+    if (fromCharSelect || stayClose) randomCapsule.forcePosition();
     else
       randomCapsule.initJumpIn(0, force);
 
@@ -803,7 +803,7 @@ class FreeplayState extends MusicBeatSubState
       funnyMenu.capsule.alpha = 0.5;
       funnyMenu.hsvShader = hsvShader;
       funnyMenu.newText.animation.curAnim.curFrame = 45 - ((i * 4) % 45);
-      if (fromCharSelect) funnyMenu.forcePosition();
+      if (fromCharSelect || stayClose) funnyMenu.forcePosition();
       else
         funnyMenu.initJumpIn(0, force);
 
@@ -1730,7 +1730,7 @@ class FreeplayState extends MusicBeatSubState
       if (!scrollByLevels && controls.FREEPLAY_SCROLL_LEVELS_P)
       {
         scrollByLevels = true;
-        generateSongList(currentFilter, false, false, false);
+        generateSongList(currentFilter, true, false, false);
       }
 
       if (scrollByLevels)
@@ -1746,7 +1746,7 @@ class FreeplayState extends MusicBeatSubState
           else
           {
             scrollByLevels = false;
-            generateSongList(currentFilter, false, false, false);
+            generateSongList(currentFilter, true, false, false);
           }
         }
       }
@@ -2186,7 +2186,7 @@ class FreeplayState extends MusicBeatSubState
   function refreshCapsuleDisplays():Void
   {
     grpCapsules.forEachAlive((cap:SongMenuItem) -> {
-      cap.refreshDisplay(scrollByLevels);
+      cap.refreshDisplay(true, scrollByLevels);
     });
   }
 

@@ -532,7 +532,7 @@ class SongMenuItem extends FlxSpriteGroup
     favIcon.animation.curAnim.curFrame = favIcon.animation.curAnim.numFrames - 1;
     favIconBlurred.animation.curAnim.curFrame = favIconBlurred.animation.curAnim.numFrames - 1;
 
-    refreshDisplay(isLevelDisplay);
+    refreshDisplay(true, isLevelDisplay);
 
     checkWeek(freeplayData?.data.id);
   }
