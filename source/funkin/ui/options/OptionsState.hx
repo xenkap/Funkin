@@ -9,7 +9,7 @@ import flixel.group.FlxGroup;
 import flixel.util.FlxSignal;
 import funkin.audio.FunkinSound;
 import funkin.ui.mainmenu.MainMenuState;
-import funkin.ui.MusicBeatState;
+import funkin.ui.MusicBeatSubState;
 import funkin.graphics.shaders.HSVShader;
 import funkin.input.Controls;
 #if FEATURE_NEWGROUNDS
@@ -21,9 +21,24 @@ import funkin.api.newgrounds.NewgroundsClient;
  * It mainly is controlled via the "optionsCodex" object,
  * which handles paging and going to the different submenus
  */
-class OptionsState extends MusicBeatState
+class OptionsState extends MusicBeatSubState
 {
   var optionsCodex:Codex<OptionsMenuPageName>;
+
+  public var isInPlayState:Bool = false;
+  public var reloadState:Bool = false;
+
+  public var isSubState(get, never):Bool;
+
+  function get_isSubState():Bool
+  {
+    return this._parentState != null;
+  }
+
+  public function new(isInPlayState:Bool = false)
+  {
+    this.isInPlayState = isInPlayState;
+  }
 
   override function create():Void
   {
@@ -74,7 +89,15 @@ class OptionsState extends MusicBeatState
   {
     optionsCodex.currentPage.enabled = false;
     // TODO: Animate this transition?
-    FlxG.switchState(() -> new MainMenuState());
+    if (isSubState)
+    {
+      close();
+      if (reloadState) FlxG.resetState();
+    }
+    else
+    {
+      FlxG.switchState(() -> new MainMenuState());
+    }
   }
 }
 

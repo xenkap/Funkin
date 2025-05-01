@@ -18,6 +18,7 @@ import funkin.graphics.FunkinSprite;
 import funkin.play.cutscene.VideoCutscene;
 import funkin.ui.AtlasText;
 import funkin.ui.MusicBeatSubState;
+import funkin.ui.options.OptionsState;
 
 /**
  * Parameters for initializing the PauseSubState.
@@ -45,6 +46,7 @@ class PauseSubState extends MusicBeatSubState
   static final PAUSE_MENU_ENTRIES_STANDARD:Array<PauseMenuEntry> = [
     {text: 'Resume', callback: resume},
     {text: 'Restart Song', callback: restartPlayState},
+    {text: 'Options', callback: openOptions},
     {text: 'Change Difficulty', callback: switchMode.bind(_, Difficulty)},
     {text: 'Enable Practice Mode', callback: enablePracticeMode, filter: () -> !(PlayState.instance?.isPracticeMode ?? false)},
     {text: 'Exit to Menu', callback: quitToMenu},
@@ -56,6 +58,7 @@ class PauseSubState extends MusicBeatSubState
   static final PAUSE_MENU_ENTRIES_CHARTING:Array<PauseMenuEntry> = [
     {text: 'Resume', callback: resume},
     {text: 'Restart Song', callback: restartPlayState},
+    {text: 'Options', callback: openOptions},
     {text: 'Return to Chart Editor', callback: quitToChartEditor},
   ];
 
@@ -74,6 +77,7 @@ class PauseSubState extends MusicBeatSubState
     {text: 'Resume', callback: resume},
     {text: 'Skip Cutscene', callback: skipVideoCutscene},
     {text: 'Restart Cutscene', callback: restartVideoCutscene},
+    {text: 'Options', callback: openOptions},
     {text: 'Exit to Menu', callback: quitToMenu},
   ];
 
@@ -84,6 +88,7 @@ class PauseSubState extends MusicBeatSubState
     {text: 'Resume', callback: resume},
     {text: 'Skip Dialogue', callback: skipConversation},
     {text: 'Restart Dialogue', callback: restartConversation},
+    {text: 'Options', callback: openOptions},
     {text: 'Exit to Menu', callback: quitToMenu},
   ];
 
@@ -666,6 +671,17 @@ class PauseSubState extends MusicBeatSubState
   {
     PlayState.instance.needsReset = true;
     state.close();
+  }
+
+  /**
+   * Open the options menu.
+   * @param state The current PauseSubState.
+   */
+  static function openOptions(state:PauseSubState):Void
+  {
+    openSubState(new OptionsState());
+
+    if (PlayState.instance == null) return;
   }
 
   /**
