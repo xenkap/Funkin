@@ -68,8 +68,10 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
 
   // Camera for the menu
   var menuCamera:FunkinCamera;
-  // Variable to check if we're calibrating or testing
+  // Variable to check if we're calibrating or testing. Calibration is in Phase 2 if shouldOffset == 2.
   var calibrating:Bool = false;
+  var fastOffset:Bool = false;
+  var lastOffsetPress:Float = 0;
 
   // Variables for the offset calibration
   var appliedOffsetLerp:Float = 0;
@@ -311,6 +313,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
       countText.text = 'Current Offset: 0ms';
 
       calibrating = true;
+
       MenuTypedList.pauseInput = true;
       OptionsState.instance.drumsBG.pause();
       OptionsState.instance.drumsBG.time = FlxG.sound.music.time;
@@ -319,9 +322,13 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
       canExit = false;
       differences = [];
       offsetLerp = 0;
+
+      // We save the offset and set it to 0 so the player can recalibrate.
       savedOffset = Preferences.globalOffset;
       savedOffsetInput = Preferences.inputOffset;
-      Preferences.globalOffset = 0; // We save the offset and set it to 0 so the player can recalibrate.
+      Preferences.globalOffset = 0;
+      Preferences.inputOffset = 0;
+
       shouldOffset = 1;
       tempOffset = 0;
       appliedOffsetLerp = 0;
@@ -452,18 +459,29 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     inputReleaseQueue.push(event);
   }
 
+  // Enter phase 2 of calibration.
+  public function advanceCalibration():Void
+  {
+    jumpInText.text = 'Great! Moving on...\nLine up the hit with the music!\nPress LEFT/RIGHT to change your offset.';
+    FunkinSound.playOnce(Paths.sound('confirmMenu'));
+    Preferences.inputOffset = 0;
+
+    Preferences.globalOffset = tempOffset;
+    tempOffset = 0;
+    shouldOffset = 2;
+  }
+
   // Exits the calibration and resets the offset.
   public function exitCalibration(cancel:Bool):Void
   {
     backButton.enabled = false;
-    shouldOffset = -1;
     #if mobile
     if (OptionsState.instance.hitbox != null) OptionsState.instance.hitbox.visible = false;
     #end
     tempOffset = 0;
     if (cancel)
     {
-      if (calibrating)
+      if (calibrating && shouldOffset == 1)
       {
         Preferences.globalOffset = savedOffset;
         Preferences.inputOffset = savedOffsetInput;
@@ -475,7 +493,10 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     }
     else
       FunkinSound.playOnce(Paths.sound('confirmMenu'));
+
+    shouldOffset = -1;
     offsetItem.currentValue = Preferences.globalOffset;
+    offsetItem2.currentValue = Preferences.inputOffset;
     OptionsState.instance.drumsBG.fadeOut(1, 0);
   }
 
@@ -483,6 +504,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
   public function handleMobileExit():Void
   {
     if (shouldOffset == 1) exitCalibration(true);
+    if (shouldOffset == 2) exitCalibration(false);
     else if (shouldOffset == 0) exit();
   }
 
@@ -568,10 +590,8 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
         arrow.beat = b + beatDiff;
         lastArrowBeat = arrow.beat;
       }
-      if (calibrating)
-      {
-        arrowBeat = lastArrowBeat + 2;
-      }
+
+      if (calibrating) arrowBeat = lastArrowBeat - 2;
       else
         arrowBeat = 4;
 
@@ -608,17 +628,8 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     }
 
     // Calibration logic
-    if (shouldOffset == 1 && calibrating)
+    if (shouldOffset >= 1 && calibrating)
     {
-      // Lerp our offset
-      if (_offsetLerpTime < 1) _offsetLerpTime += elapsed * 2;
-      else
-        _offsetLerpTime = 1;
-
-      appliedOffsetLerp = FlxMath.lerp(_lastOffset, tempOffset, _offsetLerpTime);
-
-      countText.text = 'Current Offset: ' + Std.int(appliedOffsetLerp) + 'ms';
-
       var toRemove:Array<ArrowData> = [];
 
       // Update arrows
@@ -629,6 +640,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
         var beatOffset:Float = appliedOffsetLerp / msPerBeat;
 
         var ms:Float = arrow.beat * msPerBeat;
+
         var offset:Float = GRhythmUtil.getNoteY(ms + appliedOffsetLerp, 2, false, localConductor);
         arrow.sprite.y = receptor.y + offset - (arrow.sprite.height / 2);
         arrow.sprite.x = receptor.x - (arrow.sprite.width / 2);
@@ -665,9 +677,109 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
         createArrow(nextBeat);
       }
 
-      // Hit a note (calibration)
-      if (FlxG.keys.justPressed.ANY #if FEATURE_TOUCH_CONTROLS || TouchUtil.justPressed #end)
+      if (shouldOffset == 1) // Phase 1
       {
+        // Lerp our offset
+        if (_offsetLerpTime < 1) _offsetLerpTime += elapsed * 2;
+        else
+          _offsetLerpTime = 1;
+
+        appliedOffsetLerp = FlxMath.lerp(_lastOffset, tempOffset, _offsetLerpTime);
+
+        countText.text = 'Current Offset: ' + Std.int(appliedOffsetLerp) + 'ms';
+
+        // Hit a note (calibration)
+        if (FlxG.keys.justPressed.ANY #if FEATURE_TOUCH_CONTROLS || TouchUtil.justPressed #end)
+        {
+          var arrow:ArrowData = getClosestArrowAtBeat(b);
+
+          var closestBeat:Float = Math.round(b);
+          var diff:Float = closestBeat - b;
+          var ms:Float = diff * msPerBeat;
+
+          if (arrow != null) // eric sees this and goes "OMG NULL REF!!!!"
+          {
+            var beatOffset:Float = appliedOffsetLerp / msPerBeat;
+
+            var arrowDiff:Float = (arrow.beat + beatOffset) - b;
+
+            if (Math.abs(arrowDiff) < 0.25)
+            {
+              arrow.sprite.alpha = 0;
+              arrow.sprite.kill();
+              // arrow.debugText.kill();
+              arrows.remove(arrow);
+            }
+          }
+
+          var consistency:Float = getConsistency();
+
+          if (consistency > 80 && differences.length > 4)
+          {
+            jumpInText.text = 'Try to be a little more consistent with your timing!';
+            differences = [];
+            tempOffset = 0;
+            appliedOffsetLerp = 0;
+            _gotMad = true;
+            return;
+          }
+
+          addDifference(ms);
+
+          // Move to phase 2
+          if (differences.length >= 16)
+          {
+            advanceCalibration();
+            return;
+          }
+
+          if (!_gotMad)
+          {
+            if (Math.abs(ms + tempOffset) < 45) jumpInText.text = 'Great job, keep going!';
+            else
+              jumpInText.text = 'Nice job, keep going!';
+          }
+
+          jumpInText.text += '\n' + differences.length + '/16';
+
+          _gotMad = false;
+
+          scaleModifier = 0.75;
+        }
+      }
+      else // shouldOffset == 2
+      { // Phase 2
+
+        final leftP:Bool = controls.UI_LEFT_P;
+        final rightP:Bool = controls.UI_RIGHT_P;
+
+        final left:Bool = controls.UI_LEFT;
+        final right:Bool = controls.UI_RIGHT;
+        if (left || right)
+        {
+          lastOffsetPress += FlxG.elapsed;
+          if (!fastOffset && lastOffsetPress > 0.5)
+          {
+            // If the last offset press was more than 0.5 seconds ago, reset the fast offset.
+            fastOffset = true;
+            lastOffsetPress = 0;
+          }
+
+          if (fastOffset || leftP || rightP) tempOffset += (rightP || right) ? 1 : -1;
+
+          if (tempOffset > 1500) tempOffset = 1500;
+          if (tempOffset < -1500) tempOffset = -1500;
+        }
+        else
+        {
+          // Reset the fast offset if the user is not changing the offset.
+          fastOffset = false;
+          lastOffsetPress = 0;
+        }
+
+        appliedOffsetLerp = Preferences.globalOffset + tempOffset;
+        countText.text = 'Current Offset: ' + Std.int(tempOffset) + 'ms';
+
         var arrow:ArrowData = getClosestArrowAtBeat(b);
 
         var closestBeat:Float = Math.round(b);
@@ -680,7 +792,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
 
           var arrowDiff:Float = (arrow.beat + beatOffset) - b;
 
-          if (Math.abs(arrowDiff) < 0.25)
+          if (arrowDiff <= 0)
           {
             arrow.sprite.alpha = 0;
             arrow.sprite.kill();
@@ -689,41 +801,20 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
           }
         }
 
-        var consistency:Float = getConsistency();
-
-        if (consistency > 80 && differences.length > 4)
+        if (controls.ACCEPT)
         {
-          jumpInText.text = 'Try to be a little more consistent with your timing!';
-          differences = [];
-          tempOffset = 0;
-          appliedOffsetLerp = 0;
-          _gotMad = true;
-          return;
-        }
-
-        addDifference(-ms);
-
-        if (differences.length >= 16)
-        {
-          jumpInText.text = 'Calibration complete!';
+          jumpInText.text = '\nCalibration complete!';
+          Preferences.globalOffset += tempOffset;
           Preferences.inputOffset = tempOffset;
-          Preferences.globalOffset = tempOffset;
           exitCalibration(false);
           return;
         }
 
-        if (!_gotMad)
+        if (controls.BACK)
         {
-          if (Math.abs(ms + tempOffset) < 45) jumpInText.text = 'Great job, keep going!';
-          else
-            jumpInText.text = 'Nice job, keep going!';
+          exitCalibration(true);
+          return;
         }
-
-        jumpInText.text += '\n' + differences.length + '/16';
-
-        _gotMad = false;
-
-        scaleModifier = 0.75;
       }
     }
     // Testing logic
@@ -779,23 +870,22 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     if (lerped < 1) lerped += elapsed / 2;
     else if (lerped > 1) lerped = 1;
 
-    if (shouldOffset == 1)
+    switch (shouldOffset)
     {
-      offsetLerp += elapsed / 2;
-      if (offsetLerp >= 1) offsetLerp = 1;
-    }
-    else if (shouldOffset == -1)
-    {
-      offsetLerp -= elapsed / 3;
-      if (offsetLerp <= 0) // We're exiting the calibration OR testing state
-      {
-        backButton.enabled = true;
-        canExit = true;
-        calibrating = false;
-        MenuTypedList.pauseInput = false;
-        offsetLerp = 0;
-        shouldOffset = 0;
-      }
+      case 1 | 2: // Phase 1 & 2 calibration
+        offsetLerp += elapsed / 2;
+        if (offsetLerp >= 1) offsetLerp = 1;
+      case -1:
+        offsetLerp -= elapsed / 3;
+        if (offsetLerp <= 0) // We're exiting the calibration OR testing state
+        {
+          backButton.enabled = true;
+          canExit = true;
+          calibrating = false;
+          MenuTypedList.pauseInput = false;
+          offsetLerp = 0;
+          shouldOffset = 0;
+        }
     }
 
     blackRect.alpha = FlxMath.lerp(0, 0.5, FlxEase.cubeInOut(lerped));
@@ -891,7 +981,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
 
     var noteDiff:Int = Std.int(totalDiff);
 
-    addDifference(-noteDiff);
+    addDifference(noteDiff);
 
     if (noteDiff == 0)
     {

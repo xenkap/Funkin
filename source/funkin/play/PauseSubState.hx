@@ -432,12 +432,12 @@ class PauseSubState extends MusicBeatSubState
 
     // Right side
     offsetText = new FlxText(20, metadataSong.y - 12, (camera.width + 10) - Math.max(40, funkin.ui.FullScreenScaleMode.gameNotchSize.x),
-      'Global Offset: ${Preferences.globalOffset ?? 0}ms\nInput Offset: ${Preferences.globalOffset ?? 0}ms');
+      'OFFSETS\nGlobal: ${Preferences.globalOffset ?? 0}ms\nInput: ${Preferences.inputOffset ?? 0}ms');
     offsetText.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.WHITE, FlxTextAlign.RIGHT);
     offsetText.scrollFactor.set(0, 0);
 
     offsetTextInfo = new FlxText(20, offsetText.y + 16, (camera.width + 10) - Math.max(40, funkin.ui.FullScreenScaleMode.gameNotchSize.x),
-      'Hold SHIFT-UP/DOWN,\nto change the global offset.\nHold CTRL-UP/DOWN,\nto change the input offset.');
+      'Hold SHIFT-UP/DOWN to change the global offset.\nHold CTRL-UP/DOWN to change the input offset.');
     offsetTextInfo.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.WHITE, FlxTextAlign.RIGHT);
     offsetTextInfo.scrollFactor.set(0, 0);
 
@@ -582,8 +582,8 @@ class PauseSubState extends MusicBeatSubState
     var offset:Int = Preferences.globalOffset ?? 0;
     var inputOffset:Int = Preferences.inputOffset ?? 0;
 
-    var shift = FlxG.keys.pressed.SHIFT;
-    var control = FlxG.keys.pressed.CONTROL;
+    final shift:Bool = FlxG.keys.pressed.SHIFT;
+    final control:Bool = FlxG.keys.pressed.CONTROL;
 
     if ((shift || control) && (up || down))
     {
@@ -601,14 +601,14 @@ class PauseSubState extends MusicBeatSubState
         {
           if (shift) offset += (upP || up) ? 1 : -1;
           if (control) inputOffset += (upP || up) ? 1 : -1;
-          offsetText.text = 'Global Offset: ${offset}ms\nInput Offset: ${inputOffset}ms';
+          offsetText.text = 'OFFSETS\nGlobal: ${offset}ms\nInput: ${inputOffset}ms';
         }
       }
       else
       {
         if (shift) offset += (upP || up) ? 1 : -1;
         if (control) inputOffset += (upP || up) ? 1 : -1;
-        offsetText.text = 'Global Offset: ${offset}ms\nInput Offset: ${inputOffset}ms';
+        offsetText.text = 'OFFSETS\nGlobal: ${offset}ms\nInput: ${inputOffset}ms';
       }
 
       if (offset > 1500) offset = 1500;
