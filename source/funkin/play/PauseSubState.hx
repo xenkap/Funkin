@@ -432,12 +432,12 @@ class PauseSubState extends MusicBeatSubState
 
     // Right side
     offsetText = new FlxText(20, metadataSong.y - 12, (camera.width + 10) - Math.max(40, funkin.ui.FullScreenScaleMode.gameNotchSize.x),
-      'Global Offset: ${Preferences.globalOffset ?? 0}ms');
+      'Global Offset: ${Preferences.globalOffset ?? 0}ms\nInput Offset: ${Preferences.globalOffset ?? 0}ms');
     offsetText.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.WHITE, FlxTextAlign.RIGHT);
     offsetText.scrollFactor.set(0, 0);
 
     offsetTextInfo = new FlxText(20, offsetText.y + 16, (camera.width + 10) - Math.max(40, funkin.ui.FullScreenScaleMode.gameNotchSize.x),
-      'Hold SHIFT-UP/DOWN,\nto change the offset.');
+      'Hold SHIFT-UP/DOWN,\nto change the global offset.\nHold CTRL-UP/DOWN,\nto change the input offset.');
     offsetTextInfo.setFormat(Paths.font('vcr.ttf'), 16, FlxColor.WHITE, FlxTextAlign.RIGHT);
     offsetTextInfo.scrollFactor.set(0, 0);
 
@@ -580,7 +580,12 @@ class PauseSubState extends MusicBeatSubState
     final up:Bool = controls.UI_UP;
     final down:Bool = controls.UI_DOWN;
     var offset:Int = Preferences.globalOffset ?? 0;
-    if (FlxG.keys.pressed.SHIFT && (up || down))
+    var inputOffset:Int = Preferences.inputOffset ?? 0;
+
+    var shift = FlxG.keys.pressed.SHIFT;
+    var control = FlxG.keys.pressed.CONTROL;
+
+    if ((shift || control) && (up || down))
     {
       lastOffsetPress += FlxG.elapsed;
       if (!fastOffset)
@@ -594,28 +599,32 @@ class PauseSubState extends MusicBeatSubState
 
         if (upP || downP)
         {
-          offset += (upP || up) ? 1 : -1;
-
-          offsetText.text = 'Global Offset: ${offset}ms';
+          if (shift) offset += (upP || up) ? 1 : -1;
+          if (control) inputOffset += (upP || up) ? 1 : -1;
+          offsetText.text = 'Global Offset: ${offset}ms\nInput Offset: ${inputOffset}ms';
         }
       }
       else
       {
-        offset += (upP || up) ? 1 : -1;
-
-        offsetText.text = 'Global Offset: ${offset}ms';
+        if (shift) offset += (upP || up) ? 1 : -1;
+        if (control) inputOffset += (upP || up) ? 1 : -1;
+        offsetText.text = 'Global Offset: ${offset}ms\nInput Offset: ${inputOffset}ms';
       }
 
       if (offset > 1500) offset = 1500;
       if (offset < -1500) offset = -1500;
 
+      if (inputOffset > 1500) inputOffset = 1500;
+      if (inputOffset < -1500) inputOffset = -1500;
+
       Preferences.globalOffset = offset;
+      Preferences.inputOffset = inputOffset;
 
       return;
     }
     else
     {
-      // Reset the fast offset if the user is not holding SHIFT.
+      // Reset the fast offset if the user is not holding SHIFT or CONTROL.
       fastOffset = false;
       lastOffsetPress = 0;
     }

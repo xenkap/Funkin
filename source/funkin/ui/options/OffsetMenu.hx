@@ -49,6 +49,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
 
   // Page<OptionsState.OptionsMenuPageName> stuff
   var offsetItem:NumberPreferenceItem;
+  var offsetItem2:NumberPreferenceItem;
   var items:TextMenuList;
   var preferenceItems:FlxTypedSpriteGroup<FlxSprite>;
   var backButton:FunkinBackButton;
@@ -73,6 +74,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
   // Variables for the offset calibration
   var appliedOffsetLerp:Float = 0;
   var savedOffset:Int = 0;
+  var savedOffsetInput:Int = 0;
   var tempOffset:Int = 0;
 
   // Variables for transitioning between states
@@ -287,9 +289,14 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     offsetItem = createPrefItemNumber('Offset (Global)', 'Offset (Global)', function(value:Float) {
       Preferences.globalOffset = Std.int(value);
     }, null, Preferences.globalOffset, -1500, 1500, 1.0, 2, 5);
+    offsetItem2 = createPrefItemNumber('Offset (Input)', 'Offset (Input)', function(value:Float) {
+      Preferences.inputOffset = Std.int(value);
+    }, null, Preferences.inputOffset, -1500, 1500, 1.0, 2, 5);
     createButtonItem('Reset Offset', function() {
       Preferences.globalOffset = 0;
+      Preferences.inputOffset = 0;
       offsetItem.currentValue = Preferences.globalOffset;
+      offsetItem2.currentValue = Preferences.inputOffset;
     });
     createButtonItem('Offset Calibration', function() {
       // Reset calibration state and start another one.
@@ -313,6 +320,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
       differences = [];
       offsetLerp = 0;
       savedOffset = Preferences.globalOffset;
+      savedOffsetInput = Preferences.inputOffset;
       Preferences.globalOffset = 0; // We save the offset and set it to 0 so the player can recalibrate.
       shouldOffset = 1;
       tempOffset = 0;
@@ -395,7 +403,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
       {
       #end
         testStrumline.y = Preferences.downscroll ? FlxG.height - (testStrumline.height + 45) - Constants.STRUMLINE_Y_OFFSET : (testStrumline.height / 2)
-        - Constants.STRUMLINE_Y_OFFSET;
+          - Constants.STRUMLINE_Y_OFFSET;
         if (Preferences.downscroll) jumpInText.y = FlxG.height - 425;
         testStrumline.isDownscroll = Preferences.downscroll;
       #if mobile
@@ -427,8 +435,8 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
   }
 
   /**
-   * Callback executed when one of the note keys is pressed.
-   */
+     * Callback executed when one of the note keys is pressed.
+     */
   function onKeyPress(event:PreciseInputEvent):Void
   {
     // Do the minimal possible work here.
@@ -436,8 +444,8 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
   }
 
   /**
-   * Callback executed when one of the note keys is released.
-   */
+     * Callback executed when one of the note keys is released.
+     */
   function onKeyRelease(event:PreciseInputEvent):Void
   {
     // Do the minimal possible work here.
@@ -455,7 +463,11 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     tempOffset = 0;
     if (cancel)
     {
-      if (calibrating) Preferences.globalOffset = savedOffset;
+      if (calibrating)
+      {
+        Preferences.globalOffset = savedOffset;
+        Preferences.inputOffset = savedOffsetInput;
+      }
       #if !mobile
       // mobile would play this twice
       FunkinSound.playOnce(Paths.sound('cancelMenu'));
@@ -513,11 +525,11 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
   var _lastDirection:Int = 0;
 
   /* Adds a difference in milliseconds to the list.
-    If there are more than 4 differences, it calculates the average and sets the global offset.
-    This is used for calibrating the offset based on user input.
-    @param ms The difference in milliseconds to add.
-    @see Preferences.globalOffset
-   */
+      If there are more than 4 differences, it calculates the average and sets the global offset.
+      This is used for calibrating the offset based on user input.
+      @param ms The difference in milliseconds to add.
+      @see Preferences.globalOffset
+     */
   public function addDifference(ms:Float):Void
   {
     differences.push(ms);
@@ -689,11 +701,12 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
           return;
         }
 
-        addDifference(ms);
+        addDifference(-ms);
 
         if (differences.length >= 16)
         {
           jumpInText.text = 'Calibration complete!';
+          Preferences.inputOffset = tempOffset;
           Preferences.globalOffset = tempOffset;
           exitCalibration(false);
           return;
@@ -833,9 +846,9 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
     }
 
     /*debugBeatText.x = receptor.x + receptor.width * 2;
-      debugBeatText.y = receptor.y - 20;
-
-          debugBeatText.text = 'Beat: ' + b; */
+        debugBeatText.y = receptor.y - 20;
+  
+            debugBeatText.text = 'Beat: ' + b; */
 
     // receptor.angle += angleVel * elapsed;
 
@@ -878,7 +891,7 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
 
     var noteDiff:Int = Std.int(totalDiff);
 
-    addDifference(noteDiff);
+    addDifference(-noteDiff);
 
     if (noteDiff == 0)
     {
@@ -896,9 +909,9 @@ class OffsetMenu extends Page<OptionsState.OptionsMenuPageName>
   }
 
   /**
-   * PreciseInputEvents are put into a queue between update() calls,
-   * and then processed here.
-   */
+     * PreciseInputEvents are put into a queue between update() calls,
+     * and then processed here.
+     */
   function processInputQueue():Void
   {
     if (inputPressQueue.length + inputReleaseQueue.length == 0 || shouldOffset != 1) return;

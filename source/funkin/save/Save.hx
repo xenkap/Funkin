@@ -128,6 +128,7 @@ class Save
           vsyncMode: 'Off',
           strumlineBackgroundOpacity: 0,
           autoFullscreen: false,
+          inputOffset: 0,
           globalOffset: 0,
           audioVisualOffset: 0,
           unlockedFramerate: false,
@@ -1587,13 +1588,19 @@ typedef SaveDataOptions =
   var autoFullscreen:Bool;
 
   /**
-   * Offset the user's inputs by this many ms.
+   * Affects the delay between the audio and the visuals during gameplay.
    * @default `0`
    */
   var globalOffset:Int;
 
   /**
-   * Unused !!
+   * Offset the user's inputs by this many ms.
+   * @default `0`
+   */
+  var inputOffset:Int;
+
+  /**
+   * Unused (legacy) !!
    * Affects the delay between the audio and the visuals during gameplay.
    * @default `0`
    */

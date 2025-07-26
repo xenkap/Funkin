@@ -245,27 +245,15 @@ class Conductor
   public var formatOffset:Float = 0;
 
   /**
-   * An offset set by the user to compensate for input lag.
+   * An offset set by the user to compensate for audio/visual lag.
    * No matter if you're using a local conductor or not, this always loads
    * to/from the save file
    */
   public var globalOffset(get, never):Int;
 
-  /**
-   * An offset set by the user to compensate for audio/visual lag
-   * No matter if you're using a local conductor or not, this always loads
-   * to/from the save file
-   */
-  public var audioVisualOffset(get, never):Int;
-
   function get_globalOffset():Int
   {
     return Preferences.globalOffset;
-  }
-
-  function get_audioVisualOffset():Int
-  {
-    return Save?.instance?.options?.audioVisualOffset ?? 0;
   }
 
   public var combinedOffset(get, never):Float;
@@ -393,7 +381,7 @@ class Conductor
    *
    * @param	songPosition The current position in the song in milliseconds.
    *        Leave blank to use the FlxG.sound.music position.
-   * @param applyOffsets If it should apply the instrumentalOffset + formatOffset + audioVisualOffset
+   * @param applyOffsets If it should apply the instrumentalOffset + formatOffset + globalOffset
    * @param forceDispatch If it should force the dispatch of onStepHit, onBeatHit, and onMeasureHit
    *        even if the current step, beat, or measure hasn't changed.
    */

@@ -2780,7 +2780,7 @@ class PlayState extends MusicBeatSubState
 
     // Get the offset and compensate for input latency.
     // Round inward (trim remainder) for consistency.
-    var diff:Float = Conductor.instance.songPosition - note.noteData.time;
+    var diff:Float = Conductor.instance.songPosition - (note.noteData.time + Preferences.inputOffset);
 
     var totalDiff:Float = diff;
     if (diff < 0) totalDiff = diff + inputLatencyMs;

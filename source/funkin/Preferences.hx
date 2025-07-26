@@ -287,6 +287,26 @@ class Preferences
   }
 
   /**
+   * A input delay offset in milliseconds.
+   * This is used to mitigate delays in hardware input or reaction time.
+   * @default `0`
+   */
+  public static var inputOffset(get, set):Int;
+
+  static function get_inputOffset():Int
+  {
+    return Save?.instance?.options?.inputOffset ?? 0;
+  }
+
+  static function set_inputOffset(value:Int):Int
+  {
+    var save:Save = Save.instance;
+    save.options.inputOffset = value;
+    save.flush();
+    return value;
+  }
+
+  /**
    * If enabled, the game will utilize VSync (or adaptive VSync) on startup.
    * @default `OFF`
    */

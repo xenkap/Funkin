@@ -36,14 +36,17 @@ class GRhythmUtil
   /**
    * Get the current hit window for a note.
    * @param note The note to get the hit window for.
+   * @param offset If the player's input offset is accounted for.
    * @return A HitWindow object containing the start, center, and end times of the hit window.
    */
-  public static function getHitWindow(note:NoteSprite):HitWindow
+  public static function getHitWindow(note:NoteSprite, offset:Bool = true):HitWindow
   {
+    var windowStart:Float = note.strumTime;
+    if (offset) windowStart += Preferences.inputOffset;
     return {
-      start: note.strumTime - Constants.HIT_WINDOW_MS,
-      center: note.strumTime,
-      end: note.strumTime + Constants.HIT_WINDOW_MS
+      start: windowStart - Constants.HIT_WINDOW_MS,
+      center: windowStart,
+      end: windowStart + Constants.HIT_WINDOW_MS
     };
   }
 
